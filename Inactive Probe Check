@@ -1,0 +1,33 @@
+--
+-- check_robot_probe.lua
+--
+print('Robot & Probe Status')
+print('====================')
+print(' ')
+
+hublist = nimbus.request("hub","gethubs");
+hubs = hublist.hublist
+args = pds.create()
+for hub_key,hub_table in pairs(hubs) do
+   hub = hubs[hub_key]
+   print ("Processing hub: " .. hub.name .. "\n")
+   robots = nimbus.request(hub.addr,"getrobots")
+   if robots ~= nil then
+      for r_key,r_value in pairs(robots.robotlist) do
+         controller = r_value.addr.."/controller"
+--         print ("  Processing robot: " .. r_value.name .. "\n")
+         probes = nimbus.request(controller,"probe_list")
+         if probes ~= nil then
+            for p_key,p_value in pairs(probes) do
+                  if p_value.active == 0 then
+                    print ("    * Probe: " .. p_value.name .. " is Inactive on robot: " .. r_value.name .. " *\n")
+                    local resp,rc = nimbus.alarm(1, "Check_robot_probe_status - Probe: " .. p_value.name .. " is Inactive on robot: " .. r_value.name .. "","check_probe_"..r_value.name.."_"..p_value.name)
+                  end
+            end
+         else
+            print("  ** Robot: " .. r_value.name.." is Inactive **\n")
+            local resp,rc = nimbus.alarm(1, "Check_robot_probe_status - Robot: " .. r_value.name.." is Inactive","check_robot_"..r_value.name)
+         end
+      end
+   end
+end
